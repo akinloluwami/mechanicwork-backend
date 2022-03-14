@@ -3,24 +3,35 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+
 router.post("/signup", async (req, res) => {
+  const { username, displayName, email, password } = req.body;
   const user = new User({
-    username: req.body.username,
-    displayName: req.body.displayName,
-    email: req.body.email,
-    password: await bcrypt.hash(req.body.password, 10),
+    username: username,
+    displayName: displayName,
+    email: email,
+    password: bcrypt.hashSync(password, 10),
   });
-  const emailExists = await User.findOne({ email: req.body.email });
-  const usernameExists = await User.findOne({ username: req.body.username });
-  const passwordStrength = req.body.password.length >= 8;
+  const emailExists = await User.findOne({ email: email });
+  const usernameExists = await User.findOne({ username: username });
+  const passwordStrength = password.length >= 8;
   const validEmail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(
-    req.body.email
+    email
   );
-  const validUsername = /^[a-zA-Z0-9]+$/.test(req.body.username);
+  if (!user) {
+    res.status(400).json({
+      message: "Please enter all fields",
+    });
+  }
+  const validUsername =
+    /^[a-zA-Z0-9]+$/.test(username) &&
+    username.length >= 2 &&
+    username.length <= 15;
   const validPassword =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-      req.body.password
+      password
     ) && passwordStrength;
+
   if (emailExists) {
     return res.status(400).json({
       message: "Email already exists",
@@ -43,9 +54,10 @@ router.post("/signup", async (req, res) => {
         "Password must be at least 8 characters long and contain at least one number, one uppercase letter and one special character",
     });
   }
-  user.save();
-
-  res.send(user);
+  await user.save();
+  res.status(201).json({
+    message: "User created successfully",
+  });
 });
 
 router.post("/login", async (req, res) => {
