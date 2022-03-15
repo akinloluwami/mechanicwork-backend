@@ -46,6 +46,47 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  posts: [
+    {
+      type: Array,
+    },
+  ],
+  rank: {
+    type: String,
+    default: "Rookie",
+  },
+  gigPoints: {
+    type: Number,
+    default: 0,
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now,
+  },
+  lastLoginIp: {
+    type: String,
+  },
+  lastLoginBrowser: {
+    type: String,
+  },
+  lastLoginDevice: {
+    type: String,
+  },
+  lastLoginOs: {
+    type: String,
+  },
+  totalLogins: {
+    type: Number,
+    default: 0,
+  },
+  lastActivity: {
+    type: Date,
+    default: Date.now,
+  },
+  isActice: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model("User", UserSchema);

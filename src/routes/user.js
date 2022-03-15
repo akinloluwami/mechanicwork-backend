@@ -4,83 +4,40 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-router.post("/signup", async (req, res) => {
-  const { username, displayName, email, password } = req.body;
-  const user = new User({
-    username: username,
-    displayName: displayName,
-    email: email,
-    password: bcrypt.hashSync(password, 10),
-  });
-  const emailExists = await User.findOne({ email: email });
-  const usernameExists = await User.findOne({ username: username });
-  const passwordStrength = password.length >= 8;
-  const validEmail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(
-    email
-  );
-  if (!user) {
-    res.status(400).json({
-      message: "Please enter all fields",
-    });
-  }
-  const validUsername =
-    /^[a-zA-Z0-9]+$/.test(username) &&
-    username.length >= 2 &&
-    username.length <= 15;
-  const validPassword =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-      password
-    ) && passwordStrength;
+router.get("/profile", async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.id);
 
-  if (emailExists) {
-    return res.status(400).json({
-      message: "Email already exists",
-    });
-  } else if (usernameExists) {
-    return res.status(400).json({
-      message: "Username already exists",
-    });
-  } else if (!validEmail) {
-    return res.status(400).json({
-      message: "Invalid email",
-    });
-  } else if (!validUsername) {
-    return res.status(400).json({
-      message: "Invalid username",
-    });
-  } else if (!validPassword) {
-    return res.status(400).json({
-      message:
-        "Password must be at least 8 characters long and contain at least one number, one uppercase letter and one special character",
-    });
-  }
-  await user.save();
-  res.status(201).json({
-    message: "User created successfully",
+  res.status(200).json({
+    message: "User profile",
+    data: {
+      username: user.username,
+      displayName: user.displayName,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      isVerified: user.isVerified,
+    },
   });
+
+  //Not catching errors coz we are fetching data from token
 });
 
-router.post("/login", async (req, res) => {
-  const user = await User.findOne({
-    $or: [{ username: req.body.username }, { email: req.body.email }],
-  });
-  if (!user) {
-    return res.status(400).json({
-      message: "Username or password is incorrect",
-    });
-  }
-  const validPassword = await bcrypt.compare(req.body.password, user.password);
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-  if (!validPassword) {
-    return res.status(400).json({
-      message: "Username or password is incorrect",
-    });
-  }
-  res.send(user.username + " " + token);
-});
-
-router.post("/changepassword", async (req, res) => {
-  const token = req.body.token;
-});
+// router.get("/:username", async (req, res) => {
+//   const user = await User.findOne({ username: req.params.username });
+//   if (!user) {
+//     return res.status(400).json({
+//       message: "User not found",
+//     });
+//   }
+//   res.status(200).json({
+//     message: "User profile",
+//     data: {
+//       username: user.username,
+//       displayName: user.displayName,
+//     },
+//   });
+// });
 
 module.exports = router;
